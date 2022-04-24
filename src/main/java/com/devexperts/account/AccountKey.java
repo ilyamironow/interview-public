@@ -17,4 +17,9 @@ public class AccountKey {
     public static AccountKey valueOf(long accountId) {
         return new AccountKey(accountId);
     }
+
+    @Override
+    public String toString() {
+        return Long.toString(accountId);
+    }
 }

@@ -4,30 +4,38 @@ import com.devexperts.account.Account;
 import com.devexperts.account.AccountKey;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Logger;
 
 @Service
 public class AccountServiceImpl implements AccountService {
+    private final Logger logger = Logger.getLogger(AccountServiceImpl.class.getName());
 
-    private final List<Account> accounts = new ArrayList<>();
+    private final Map<AccountKey, Account> accounts = new HashMap<>();
 
     @Override
     public void clear() {
+        logger.info("Clearing account cache");
         accounts.clear();
     }
 
     @Override
     public void createAccount(Account account) {
-        accounts.add(account);
+        Account accountFromCache = accounts.get(account.getAccountKey());
+        if (accountFromCache == null) {
+            logger.info("Account successfully created: " + account);
+            accounts.put(account.getAccountKey(), account);
+        } else {
+            String msg = "account is already present in cache: " + accountFromCache;
+            logger.warning(msg);
+            throw new IllegalArgumentException(msg);
+        }
     }
 
     @Override
     public Account getAccount(long id) {
-        return accounts.stream()
-                .filter(account -> account.getAccountKey() == AccountKey.valueOf(id))
-                .findAny()
-                .orElse(null);
+        return accounts.get(AccountKey.valueOf(id));
     }
 
     @Override
