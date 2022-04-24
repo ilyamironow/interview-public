@@ -149,6 +149,7 @@
                 <version>${maven-surefire-plugin.version}</version>
             </plugin>
         </plugins>
+        <testSourceDirectory>src/main/tests</testSourceDirectory>
     </build>
 
     <repositories>
