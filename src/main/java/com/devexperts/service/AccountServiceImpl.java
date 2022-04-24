@@ -46,24 +46,37 @@ public class AccountServiceImpl implements AccountService {
             throw new AccountNotFoundException("source account was not found", null);
         } else if (target == null) {
             throw new AccountNotFoundException("target account was not found", null);
-        } else if (source.equals(target)) {
-            throw new IllegalArgumentException("accounts should not be equal");
-        } else if (!accounts.containsKey(source.getAccountKey())) {
-            throw new AccountNotFoundException("source account was not found", source.getAccountKey());
-        } else if (!accounts.containsKey(target.getAccountKey())) {
-            throw new AccountNotFoundException("target account was not found", target.getAccountKey());
-        } else if (amount <= 0) {
-            throw new IllegalArgumentException("transferred amount should be positive");
         }
-        Double sourceBalance = source.getBalance();
-        if (sourceBalance >= amount) {
-            source.setBalance(sourceBalance - amount);
-            target.setBalance(target.getBalance() + amount);
-            logger.info("Successfully transferred " + amount + "$ from account " + source.getAccountKey() + " to " + target.getAccountKey());
+        Account firstLock, secondLock;
+        if (source.getAccountKey().hashCode() < target.getAccountKey().hashCode()) {
+            firstLock = source;
+            secondLock = target;
         } else {
-            throw new InsufficientBalanceException("source account doesn't have required amount of money",
-                    source.getAccountKey());
+            firstLock = target;
+            secondLock = source;
         }
-
+        // in order to get rid of concurrent issues
+        synchronized (firstLock) {
+            synchronized (secondLock) {
+                if (source.equals(target)) {
+                    throw new IllegalArgumentException("accounts should not be equal");
+                } else if (!accounts.containsKey(source.getAccountKey())) {
+                    throw new AccountNotFoundException("source account was not found", source.getAccountKey());
+                } else if (!accounts.containsKey(target.getAccountKey())) {
+                    throw new AccountNotFoundException("target account was not found", target.getAccountKey());
+                } else if (amount <= 0) {
+                    throw new IllegalArgumentException("transferred amount should be positive");
+                }
+                Double sourceBalance = source.getBalance();
+                if (sourceBalance >= amount) {
+                    source.setBalance(sourceBalance - amount);
+                    target.setBalance(target.getBalance() + amount);
+                    logger.info("Successfully transferred " + amount + "$ from account " + source.getAccountKey() + " to " + target.getAccountKey());
+                } else {
+                    throw new InsufficientBalanceException("source account doesn't have required amount of money",
+                            source.getAccountKey());
+                }
+            }
+        }
     }
 }
